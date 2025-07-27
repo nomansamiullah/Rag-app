@@ -26,3 +26,16 @@ class Config:
     # RAG Configuration
     DEFAULT_N_RESULTS = int(os.getenv('DEFAULT_N_RESULTS', '5'))
     MAX_CONVERSATION_HISTORY = int(os.getenv('MAX_CONVERSATION_HISTORY', '10'))
+
+    # File Upload Configuration
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', './uploads')
+    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', '50')) * 1024 * 1024  # 50MB
+    ALLOWED_EXTENSIONS = os.getenv('ALLOWED_EXTENSIONS', 'pdf,docx,doc,txt,md,csv,xlsx,xls').split(',')
+    
+    # Text Chunking Configuration
+    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', '1000'))
+    CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', '200'))
+    MIN_CHUNK_SIZE = int(os.getenv('MIN_CHUNK_SIZE', '100'))
+    
+    # File Processing
+    ENABLE_DUPLICATE_DETECTION = os.getenv('ENABLE_DUPLICATE_DETECTION', 'True').lower() == 'true'

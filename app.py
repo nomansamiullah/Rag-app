@@ -4,12 +4,17 @@ from api.routes import api_bp
 from utils.logger import setup_logger
 from config import Config
 
+
 # Setup logging
 logger = setup_logger(__name__)
 
 def create_app():
     """Application factory"""
     app = Flask(__name__)
+
+    # Configure file uploads
+    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_FILE_SIZE
+    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
     
     # Enable CORS
     CORS(app)

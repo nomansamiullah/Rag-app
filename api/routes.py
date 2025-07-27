@@ -13,6 +13,8 @@ from utils.logger import setup_logger
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 from services.file_manager import FileManager
+from config import Config
+import os
 
 logger = setup_logger(__name__)
 
@@ -236,7 +238,9 @@ def upload_files():
             custom_metadata['tags'] = request.form['tags']
         
         # Process files
-        result = file_manager.upload_multiple_files(files, custom_metadata)
+        result = file_manager.upload_and_process_file(files, custom_metadata)
+        # result = file_manager.upload_multiple_files(files, custom_metadata)
+        
         
         return jsonify(result), 200
         
@@ -257,6 +261,36 @@ def get_uploaded_files():
     except Exception as e:
         logger.error(f"Error in get_uploaded_files: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+# Add to routes.py
+@api_bp.route('/upload_large_file', methods=['POST'])
+def upload_large_file():
+    """Handle large file uploads with streaming"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        # Get custom metadata from form data
+        custom_metadata = {}
+        if 'category' in request.form:
+            custom_metadata['category'] = request.form['category']
+        if 'tags' in request.form:
+            custom_metadata['tags'] = request.form['tags']
+        if 'description' in request.form:
+            custom_metadata['description'] = request.form['description']
+        
+        # Use the existing method (same as upload_file)
+        result = file_manager.upload_and_process_file(file, custom_metadata)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        logger.error(f"Error in upload_large_file: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 
 @api_bp.route('/file_stats', methods=['GET'])
 def get_file_stats():

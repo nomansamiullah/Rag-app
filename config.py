@@ -39,3 +39,11 @@ class Config:
     
     # File Processing
     ENABLE_DUPLICATE_DETECTION = os.getenv('ENABLE_DUPLICATE_DETECTION', 'True').lower() == 'true'
+    
+    
+    # File Upload Configuration (Increase limits)
+    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', '100')) * 1024 * 1024  # 100MB
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', './uploads')
+    
+    # Flask Upload Limits
+    MAX_CONTENT_LENGTH = MAX_FILE_SIZE  # Add this line

@@ -13,7 +13,7 @@ def create_app():
     app = Flask(__name__)
 
     # Configure file uploads
-    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_FILE_SIZE
+    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_FILE_SIZE #100MB
     app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
     
     # Enable CORS

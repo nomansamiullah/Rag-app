@@ -27,12 +27,41 @@ def health_check():
         'service': 'RAG Chatbot API'
     })
 
+# @api_bp.route('/add_document', methods=['POST'])
+# def add_document():
+#     """Add a single document to the vector store"""
+#     try:
+#         data = request.get_json()
+#         validated_data = validate_add_document(data)
+        
+#         doc_id = chatbot.add_document(
+#             validated_data['text'],
+#             validated_data['metadata']
+#         )
+        
+#         return jsonify({
+#             'success': True,
+#             'doc_id': doc_id,
+#             'message': 'Document added successfully'
+#         })
+    
+#     except ValidationError as e:
+#         logger.warning(f"Validation error in add_document: {str(e)}")
+#         return jsonify({'error': str(e)}), 400
+    
+#     except Exception as e:
+#         logger.error(f"Error in add_document: {str(e)}")
+#         return jsonify({'error': 'Internal server error'}), 500
+
 @api_bp.route('/add_document', methods=['POST'])
 def add_document():
     """Add a single document to the vector store"""
     try:
         data = request.get_json()
+        logger.info(f"Received data: {data}")  # Add this line
+        
         validated_data = validate_add_document(data)
+        logger.info(f"Validated data: {validated_data}")  # Add this line
         
         doc_id = chatbot.add_document(
             validated_data['text'],
@@ -50,9 +79,12 @@ def add_document():
         return jsonify({'error': str(e)}), 400
     
     except Exception as e:
-        logger.error(f"Error in add_document: {str(e)}")
+        logger.error(f"FULL ERROR in add_document: {str(e)}")  # Add this line
+        logger.error(f"ERROR TYPE: {type(e)}")  # Add this line
+        import traceback
+        logger.error(f"TRACEBACK: {traceback.format_exc()}")  # Add this line
         return jsonify({'error': 'Internal server error'}), 500
-
+    
 @api_bp.route('/add_documents', methods=['POST'])
 def add_documents():
     """Add multiple documents to the vector store"""

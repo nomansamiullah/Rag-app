@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG ChatBot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        /* Light Theme */
+        .light {
+            background-color: #ffffff;
+            color: #374151;
+        }
+
+        .light .sidebar {
+            background-color: #f7f7f8;
+            border-right: 1px solid #e5e5e5;
+        }
+
+        .light .chat-container {
+            background-color: #ffffff;
+        }
+
+        .light .message-input {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+        }
+
+        .light .btn-primary {
+            background-color: #10a37f;
+        }
+
+        .light .btn-secondary {
+            background-color: #f7f7f8;
+            color: #374151;
+        }
+
+        .light .btn-secondary:hover {
+            background-color: #ececf1;
+        }
+
+        /* Dark Theme */
+        .dark {
+            background-color: #343541;
+            color: #ececf1;
+        }
+
+        .dark .sidebar {
+            background-color: #202123;
+            border-right: 1px solid #4d4d4f;
+        }
+
+        .dark .chat-container {
+            background-color: #343541;
+        }
+
+        .dark .message-input {
+            background-color: #40414f;
+            border: 1px solid #565869;
+            color: #ececf1;
+        }
+
+        .dark .btn-primary {
+            background-color: #19c37d;
+        }
+
+        .dark .btn-secondary {
+            background-color: #343541;
+            color: #ececf1;
+        }
+
+        .dark .btn-secondary:hover {
+            background-color: #40414f;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .chat-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dark .chat-header {
+            border-bottom: 1px solid #4d4d4f;
+        }
+
+        .hamburger-menu {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .hamburger-menu:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            max-width: 768px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 48px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            width: 100%;
+            margin-bottom: 48px;
+        }
+
+        .feature-card {
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 16px;
+            opacity: 0.8;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .feature-examples {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .feature-example {
+            padding: 12px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .feature-example:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Messages */
+        .messages {
+            max-width: 768px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background-color: #10a37f;
+            color: white;
+        }
+
+        .bot-avatar {
+            background-color: #ab68ff;
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            padding-top: 4px;
+        }
+
+        .message.user {
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            max-width: 768px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 48px 12px 16px;
+            border-radius: 24px;
+            border: none;
+            outline: none;
+            resize: none;
+            min-height: 48px;
+            max-height: 200px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .send-button {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background-color: #10a37f;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .send-button:hover {
+            background-color: #0d8c6c;
+        }
+
+        .send-button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            margin-bottom: 16px;
+            padding: 16px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #10a37f;
+            background-color: rgba(16, 163, 127, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #10a37f;
+            background-color: rgba(16, 163, 127, 0.2);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: #10a37f;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0d8c6c;
+        }
+
+        .btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #10a37f;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                z-index: 1000;
+                height: 100%;
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div :class="['app', theme]">
+            <!-- Sidebar -->
+            <div :class="['sidebar', { collapsed: sidebarCollapsed }]">
+                <div class="sidebar-header">
+                    <button class="new-chat-btn" @click="startNewChat">
+                        <i class="fas fa-plus"></i>
+                        New chat
+                    </button>
+                </div>
+
+                <div class="chat-history">
+                    <div 
+                        v-for="chat in chatHistory" 
+                        :key="chat.id"
+                        :class="['chat-item', { active: currentChatId === chat.id }]"
+                        @click="loadChat(chat.id)"
+                    >
+                        <i class="fas fa-message"></i>
+                        {{ chat.title }}
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="sidebar-menu-item" @click="toggleTheme">
+                        <i :class="theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                        {{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}
+                    </div>
+                    <div class="sidebar-menu-item" @click="showUploadModal = true">
+                        <i class="fas fa-upload"></i>
+                        Upload Documents
+                    </div>
+                    <div class="sidebar-menu-item" @click="showSettings = true">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Header -->
+                <div class="chat-header">
+                    <button class="hamburger-menu" @click="toggleSidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>RAG ChatBot</h1>
+                    <button class="btn btn-secondary" @click="checkHealth">
+                        <i class="fas fa-heartbeat"></i>
+                        Health Check
+                    </button>
+                </div>
+
+                <!-- Chat Container -->
+                <div class="chat-container" ref="chatContainer">
+                    <!-- Welcome Screen -->
+                    <div v-if="messages.length === 0" class="welcome-screen">
+                        <h1 class="welcome-title">RAG ChatBot</h1>
+                        
+                        <div class="feature-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-lightbulb"></i>
+                                </div>
+                                <h3 class="feature-title">Examples</h3>
+                                <div class="feature-examples">
+                                    <div class="feature-example" @click="setPrompt('What documents do you have access to?')">
+                                        "What documents do you have access to?"
+                                    </div>
+                                    <div class="feature-example" @click="setPrompt('Can you summarize the main points from the uploaded documents?')">
+                                        "Can you summarize the main points from the uploaded documents?"
+                                    </div>
+                                    <div class="feature-example" @click="setPrompt('Find information about machine learning concepts')">
+                                        "Find information about machine learning concepts"
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <h3 class="feature-title">Capabilities</h3>
+                                <div class="feature-examples">
+                                    <div class="feature-example">
+                                        Remembers context from your documents
+                                    </div>
+                                    <div class="feature-example">
+                                        Provides source-based answers
+                                    </div>
+                                    <div class="feature-example">
+                                        Supports multiple document formats
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <h3 class="feature-title">Limitations</h3>
+                                <div class="feature-examples">
+                                    <div class="feature-example">
+                                        May occasionally generate incorrect information
+                                    </div>
+                                    <div class="feature-example">
+                                        Limited to uploaded document knowledge
+                                    </div>
+                                    <div class="feature-example">
+                                        Cannot browse the internet for new information
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div v-else class="messages">
+                        <div 
+                            v-for="message in messages" 
+                            :key="message.id"
+                            :class="['message', message.type]"
+                        >
+                            <div :class="['message-avatar', message.type === 'user' ? 'user-avatar' : 'bot-avatar']">
+                                <i :class="message.type === 'user' ? 'fas fa-user' : 'fas fa-robot'"></i>
+                            </div>
+                            <div class="message-content">
+                                <div v-html="formatMessage(message.content)"></div>
+                                <div v-if="message.sources && message.sources.length > 0" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                    <small style="opacity: 0.7;">Sources:</small>
+                                    <ul style="margin-top: 4px; padding-left: 16px;">
+                                        <li v-for="source in message.sources" :key="source" style="opacity: 0.8; font-size: 14px;">
+                                            {{ source }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading Message -->
+                        <div v-if="loading" class="message bot">
+                            <div class="message-avatar bot-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    Thinking...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <!-- Upload Area -->
+                    <div 
+                        v-if="showUploadArea"
+                        class="upload-area"
+                        :class="{ dragover: dragOver }"
+                        @click="$refs.fileInput.click()"
+                        @dragover.prevent="dragOver = true"
+                        @dragleave.prevent="dragOver = false"
+                        @drop.prevent="handleFileDrop"
+                    >
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 8px; opacity: 0.6;"></i>
+                        <div>Click to upload or drag and drop documents</div>
+                        <small style="opacity: 0.6;">Supports PDF, TXT, DOCX, and more</small>
+                        <input 
+                            ref="fileInput" 
+                            type="file" 
+                            multiple 
+                            accept=".pdf,.txt,.docx,.doc"
+                            style="display: none"
+                            @change="handleFileUpload"
+                        >
+                    </div>
+
+                    <div class="input-container">
+                        <textarea
+                            v-model="inputMessage"
+                            placeholder="Message RAG ChatBot..."
+                            class="message-input"
+                            @keydown.enter.prevent="handleEnterKey"
+                            @input="adjustTextareaHeight"
+                            ref="messageInput"
+                        ></textarea>
+                        <button 
+                            class="send-button"
+                            :disabled="!inputMessage.trim() || loading"
+                            @click="sendMessage"
+                        >
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Modal -->
+        <div v-if="showUploadModal" class="modal-overlay" @click="showUploadModal = false" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;">
+            <div class="modal" @click.stop style="background: #2c2c34; padding: 24px; border-radius: 8px; max-width: 500px; width: 90%;">
+                <h3 style="margin-bottom: 16px;">Upload Documents</h3>
+                <div 
+                    class="upload-area"
+                    :class="{ dragover: dragOver }"
+                    @click="$refs.modalFileInput.click()"
+                    @dragover.prevent="dragOver = true"
+                    @dragleave.prevent="dragOver = false"
+                    @drop.prevent="handleFileDrop"
+                >
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 8px; opacity: 0.6;"></i>
+                    <div>Click to upload or drag and drop documents</div>
+                    <small style="opacity: 0.6;">Supports PDF, TXT, DOCX, and more</small>
+                    <input 
+                        ref="modalFileInput" 
+                        type="file" 
+                        multiple 
+                        accept=".pdf,.txt,.docx,.doc"
+                        style="display: none"
+                        @change="handleFileUpload"
+                    >
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+                    <button class="btn btn-secondary" @click="showUploadModal = false">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    theme: 'dark',
+                    sidebarCollapsed: false,
+                    messages: [],
+                    inputMessage: '',
+                    loading: false,
+                    chatHistory: [],
+                    currentChatId: null,
+                    showUploadArea: false,
+                    showUploadModal: false,
+                    showSettings: false,
+                    dragOver: false,
+                    apiBaseUrl: 'http://127.0.0.1:5000' // Change this to your Flask app URL
+                }
+            },
+            mounted() {
+                this.loadTheme();
+                this.loadChatHistory();
+                this.checkApiHealth();
+            },
+            methods: {
+                toggleTheme() {
+                    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', this.theme);
+                },
+                loadTheme() {
+                    const saved = localStorage.getItem('theme');
+                    if (saved) {
+                        this.theme = saved;
+                    }
+                },
+                toggleSidebar() {
+                    this.sidebarCollapsed = !this.sidebarCollapsed;
+                },
+                startNewChat() {
+                    this.currentChatId = Date.now().toString();
+                    this.messages = [];
+                    this.addToChatHistory();
+                },
+                addToChatHistory() {
+                    if (this.currentChatId && this.messages.length > 0) {
+                        const existingIndex = this.chatHistory.findIndex(chat => chat.id === this.currentChatId);
+                        const title = this.messages[0]?.content.substring(0, 30) + '...' || 'New Chat';
+                        
+                        if (existingIndex >= 0) {
+                            this.chatHistory[existingIndex].title = title;
+                            this.chatHistory[existingIndex].messages = this.messages;
+                        } else {
+                            this.chatHistory.unshift({
+                                id: this.currentChatId,
+                                title,
+                                messages: this.messages,
+                                timestamp: new Date()
+                            });
+                        }
+                        this.saveChatHistory();
+                    }
+                },
+                loadChat(chatId) {
+                    const chat = this.chatHistory.find(c => c.id === chatId);
+                    if (chat) {
+                        this.currentChatId = chatId;
+                        this.messages = chat.messages || [];
+                        this.scrollToBottom();
+                    }
+                },
+                loadChatHistory() {
+                    const saved = localStorage.getItem('chatHistory');
+                    if (saved) {
+                        this.chatHistory = JSON.parse(saved);
+                    }
+                },
+                saveChatHistory() {
+                    localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+                },
+                setPrompt(prompt) {
+                    this.inputMessage = prompt;
+                    this.$refs.messageInput.focus();
+                },
+                async sendMessage() {
+                    if (!this.inputMessage.trim() || this.loading) return;
+
+                    if (!this.currentChatId) {
+                        this.startNewChat();
+                    }
+
+                    const userMessage = {
+                        id: Date.now(),
+                        type: 'user',
+                        content: this.inputMessage.trim(),
+                        timestamp: new Date()
+                    };
+
+                    this.messages.push(userMessage);
+                    const query = this.inputMessage;
+                    this.inputMessage = '';
+                    this.loading = true;
+
+                    try {
+                        const response = await axios.post(`${this.apiBaseUrl}/chat`, {
+                            query: query,
+                            chat_id: this.currentChatId
+                        });
+
+                        const botMessage = {
+                            id: Date.now() + 1,
+                            type: 'bot',
+                            content: response.data.response,
+                            sources: response.data.sources || [],
+                            timestamp: new Date()
+                        };
+
+                        this.messages.push(botMessage);
+                        this.addToChatHistory();
+                    } catch (error) {
+                        console.error('Error sending message:', error);
+                        const errorMessage = {
+                            id: Date.now() + 1,
+                            type: 'bot',
+                            content: 'Sorry, I encountered an error. Please make sure the API server is running and try again.',
+                            timestamp: new Date()
+                        };
+                        this.messages.push(errorMessage);
+                    } finally {
+                        this.loading = false;
+                        this.scrollToBottom();
+                    }
+                },
+                handleEnterKey(event) {
+                    if (!event.shiftKey) {
+                        this.sendMessage();
+                    }
+                },
+                adjustTextareaHeight() {
+                    this.$nextTick(() => {
+                        const textarea = this.$refs.messageInput;
+                        textarea.style.height = 'auto';
+                        textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+                    });
+                },
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const container = this.$refs.chatContainer;
+                        container.scrollTop = container.scrollHeight;
+                    });
+                },
+                formatMessage(content) {
+                    return content.replace(/\n/g, '<br>');
+                },
+                async handleFileUpload(event) {
+                    const files = event.target.files;
+                    if (files.length > 0) {
+                        await this.uploadFiles(files);
+                    }
+                },
+                async handleFileDrop(event) {
+                    this.dragOver = false;
+                    const files = event.dataTransfer.files;
+                    if (files.length > 0) {
+                        await this.uploadFiles(files);
+                    }
+                },
+                async uploadFiles(files) {
+                    this.loading = true;
+                    try {
+                        const formData = new FormData();
+                        Array.from(files).forEach(file => {
+                            formData.append('files', file);
+                        });
+
+                        const response = await axios.post(`${this.apiBaseUrl}/add_documents`, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+
+                        alert(`Successfully uploaded ${files.length} document(s)`);
+                        this.showUploadModal = false;
+                        this.showUploadArea = false;
+                    } catch (error) {
+                        console.error('Error uploading files:', error);
+                        alert('Error uploading files. Please try again.');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async checkHealth() {
+                    try {
+                        const response = await axios.get(`${this.apiBaseUrl}/health`);
+                        alert('API is healthy: ' + response.data.status);
+                    } catch (error) {
+                        alert('API health check failed. Please check if the server is running.');
+                    }
+                },
+                async checkApiHealth() {
+                    try {
+                        await axios.get(`${this.apiBaseUrl}/health`);
+                        console.log('API connection successful');
+                    } catch (error) {
+                        console.warn('API connection failed. Please start your Flask server.');
+                    }
+                },
+                async getCollectionInfo() {
+                    try {
+                        const response = await axios.get(`${this.apiBaseUrl}/collection_info`);
+                        console.log('Collection info:', response.data);
+                        return response.data;
+                    } catch (error) {
+                        console.error('Error getting collection info:', error);
+                        return null;
+                    }
+                },
+                async retrieveDocuments(query) {
+                    try {
+                        const response = await axios.post(`${this.apiBaseUrl}/retrieve`, {
+                            query: query,
+                            k: 5
+                        });
+                        return response.data.documents;
+                    } catch (error) {
+                        console.error('Error retrieving documents:', error);
+                        return [];
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

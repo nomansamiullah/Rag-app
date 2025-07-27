@@ -25,14 +25,37 @@ class VectorStore:
             logger.error(f"Failed to initialize vector store: {str(e)}")
             raise
     
+    def _sanitize_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert metadata to ChromaDB-compatible format"""
+        if not metadata:
+            return {}
+        
+        sanitized = {}
+        for key, value in metadata.items():
+            if isinstance(value, list):
+                # Convert lists to comma-separated strings
+                sanitized[key] = ", ".join(str(item) for item in value)
+            elif value is None:
+                # Keep None as is
+                sanitized[key] = None
+            elif isinstance(value, (str, int, float, bool)):
+                # Keep supported types as is
+                sanitized[key] = value
+            else:
+                # Convert other types to string
+                sanitized[key] = str(value)
+        
+        return sanitized
+    
     def add_document(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """Add single document to vector store"""
         try:
             doc_id = generate_doc_id()
             
-            # Prepare metadata
+            # Prepare and sanitize metadata
             metadata = add_timestamp_to_metadata(metadata)
             metadata['doc_id'] = doc_id
+            metadata = self._sanitize_metadata(metadata)
             
             # Add to collection
             self.collection.add(
@@ -56,16 +79,18 @@ class VectorStore:
             if metadatas is None:
                 metadatas = [{}] * len(documents)
             
-            # Add timestamp and doc_id to each metadata
+            # Add timestamp and doc_id to each metadata, then sanitize
+            sanitized_metadatas = []
             for i, metadata in enumerate(metadatas):
                 metadata = add_timestamp_to_metadata(metadata)
                 metadata['doc_id'] = doc_ids[i]
-                metadatas[i] = metadata
+                sanitized_metadata = self._sanitize_metadata(metadata)
+                sanitized_metadatas.append(sanitized_metadata)
             
             # Add to collection
             self.collection.add(
                 documents=documents,
-                metadatas=metadatas,
+                metadatas=sanitized_metadatas,
                 ids=doc_ids
             )
             
